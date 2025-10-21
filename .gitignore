@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Environments / Build
+.venv/
+.env/
+env/
+build/
+dist/
+*.egg-info/
+
+# uv cache
+.uv/
+
+# Jupyter / Logs
+*.ipynb_checkpoints
+logs/
+*.log
+
+# Data / Outputs
+data/
+outputs/
+checkpoints/
+runs/
+weights/
+samples/
+images/generated/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.tmp
+*.bak
+*.swp
