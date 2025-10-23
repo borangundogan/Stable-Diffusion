@@ -2,7 +2,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from decoder import VAE_AttentionBlock, VAE_ResidualBlock
+from attention import VAE_AttentionBlock
+from residual import VAE_ResidualBlock
 
 class VAE_Encoder(nn.Sequential): # inheritence sequential class
     def __init__(self): # constructor 
@@ -57,7 +58,7 @@ class VAE_Encoder(nn.Sequential): # inheritence sequential class
           
         # Transform N(0, 1) -> N(mean, stdev) 
         # X = mean, + standart_dev * Z (noise)
-        x = mean + standart_dev + noise
+        x = mean + standart_dev * noise
 
         # scale the output by a constant : from the original repository
         x *= 0.18125
