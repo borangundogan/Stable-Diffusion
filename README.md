@@ -1,7 +1,6 @@
 # 🧠 Stable Diffusion from Scratch — Project Configuration (YAML Overview)
 
 Below is the complete **project specification in YAML format**, including environment setup, dependencies, structure, run commands, and notes.  
-You can copy this into a `project.yaml` file to keep everything organized.
 
 ---
 
