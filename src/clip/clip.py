@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from src.vae.attention import SelfAttention
+from src.attention.self_attention import SelfAttention
 
 class CLIPEmbedding(nn.Module):
     def __init__(self, n_vocab: int, n_embd: int, n_token: int):
