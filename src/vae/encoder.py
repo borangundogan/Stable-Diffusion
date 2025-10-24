@@ -1,30 +1,31 @@
 import torch
 from torch import nn
-from torch.nn import functional as F
+import torch.nn.functional as F
 
-from attention import VAE_AttentionBlock
+from vae_attention import VAE_AttentionBlock
 from residual import VAE_ResidualBlock
 
-class VAE_Encoder(nn.Sequential): # inheritence sequential class
-    def __init__(self): # constructor 
+
+class VAE_Encoder(nn.Sequential):
+    def __init__(self):
         super().__init__(
             nn.Conv2d(3, 128, kernel_size=3, padding=1),
             VAE_ResidualBlock(128, 128),
             VAE_ResidualBlock(128, 128),
-            
+
             nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=0),
             VAE_ResidualBlock(128, 256),
             VAE_ResidualBlock(256, 256),
-            
+
             nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=0),
             VAE_ResidualBlock(256, 512),
             VAE_ResidualBlock(512, 512),
-            
+
             nn.Conv2d(512, 512, kernel_size=3, stride=2, padding=0),
             VAE_ResidualBlock(512, 512),
             VAE_ResidualBlock(512, 512),
             VAE_ResidualBlock(512, 512),
-            
+
             VAE_AttentionBlock(512),
             VAE_ResidualBlock(512, 512),
 
@@ -32,35 +33,33 @@ class VAE_Encoder(nn.Sequential): # inheritence sequential class
             nn.SiLU(),
 
             nn.Conv2d(512, 8, kernel_size=3, padding=1),
-            # (batch_size, out_channels: 8, height / 8, width / 8)
             nn.Conv2d(8, 8, kernel_size=1, padding=0)
         )
 
     def forward(self, x: torch.Tensor, noise: torch.Tensor) -> torch.Tensor:
-        # x : input image (batch_size, channel, height, width)
-        # noise : adding noise (batch_size, out_channels, height / 8, width / 8)
-        
+        """
+        x: (B, 3, H, W)
+        noise: (B, 4, H/8, W/8)
+        Returns: latent (B, 4, H/8, W/8)
+        """
         for module in self:
-            
-            if getattr(module, "stride", None) == (2, 2):
-                # for applying asymmetric padding, only padding right and bottom
-                x = F.pad(x, (0,1,0,1))
-
+            if isinstance(module, nn.Conv2d) and module.stride == (2, 2):
+                # Asymmetric padding before downsampling conv
+                x = F.pad(x, (0, 1, 0, 1)).contiguous()
             x = module(x)
 
-        # for VAE latent space 
-        # (batch_size, out_channels / 2, height / 8, width / 8)
+        # Split latent channels into mean & log variance
         mean, log_variance = torch.chunk(x, 2, dim=1)
-        
-        variance = torch.clamp(log_variance, -30, 20).exp() # clamping and transform log_var to var
 
-        standart_dev = variance.sqrt()
-          
-        # Transform N(0, 1) -> N(mean, stdev) 
-        # X = mean, + standart_dev * Z (noise)
-        x = mean + standart_dev * noise
+        # Safe variance computation
+        log_variance = torch.clamp(log_variance, -30, 20)
+        variance = log_variance.exp()
+        standard_dev = torch.sqrt(variance + 1e-8)
 
-        # scale the output by a constant : from the original repository
+        # Reparameterization trick: z = μ + σ * ε
+        x = mean + standard_dev * noise.to(mean.dtype)
+
+        # Scale as in Stable Diffusion
         x *= 0.18125
 
         return x
